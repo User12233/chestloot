@@ -12,13 +12,15 @@ public class ChestLootConfig {
     // Example configuration option
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> LootTable;
 
+    public static final ForgeConfigSpec.IntValue amountOfRareItems;
+
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
 
         builder.push("General Settings");
         // Define a boolean config option; default value is true
         LootTable = builder
-                .comment("Define items for drop from chests")
+                .comment("Define or adjust items for drop from chests")
                 .define("LootTable", Arrays.asList("minecraft:air",
                         "securitycraft:keypad_chest",
                         "securitycraft:camera_monitor",
@@ -28,14 +30,6 @@ public class ChestLootConfig {
                         "peterswarfare:flashbang",
                         "peterswarfare:fraggrenade",
                         "peterswarfare:smokegrenade",
-                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m16a4\",\"GunCurrentAmmoCount\": 31,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
-                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m320\",\"GunCurrentAmmoCount\": 1,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
-                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:ak47\",\"GunCurrentAmmoCount\": 31,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"AUTO\"}",
-                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m4a1\",\"GunCurrentAmmoCount\": 30,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"AUTO\"}",
-                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:aug\",\"GunCurrentAmmoCount\": 30\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"AUTO\"}",
-                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:ai_awp\",\"HasBulletInBarrel\": 1b,\"\"GunFireMode\": \"SEMI\",\"GunCurrentAmmoCount\": 5}",
-                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m700\",\"GunCurrentAmmoCount\": 6,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
-                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:deagle\",\"GunCurrentAmmoCount\": 8,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
                         "tacz:attachment{\"AttachmentId\":\"tacz:muzzle_silencer_ptilopsis\"}",
                         "tacz:attachment{\"AttachmentId\":\"tacz:muzzle_silencer_knight_qd\"}",
                         "tacz:attachment{\"AttachmentId\":\"gucci_attachments:scope_karrina\"}",
@@ -50,6 +44,14 @@ public class ChestLootConfig {
                         "tacz:ammo{\"AmmoId\":\"tacz:308\"} 48",
                         "minecraft:cooked_beef 9",
                         "minecraft:golden_apple",
+                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m16a4\",\"GunCurrentAmmoCount\": 31,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
+                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m320\",\"GunCurrentAmmoCount\": 1,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
+                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:ak47\",\"GunCurrentAmmoCount\": 31,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"AUTO\"}",
+                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m4a1\",\"GunCurrentAmmoCount\": 30,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"AUTO\"}",
+                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:aug\",\"GunCurrentAmmoCount\": 30\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"AUTO\"}",
+                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:ai_awp\",\"HasBulletInBarrel\": 1b,\"\"GunFireMode\": \"SEMI\",\"GunCurrentAmmoCount\": 5}",
+                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m700\",\"GunCurrentAmmoCount\": 6,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
+                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:deagle\",\"GunCurrentAmmoCount\": 8,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
                         "minecraft:netherite_helmet",
                         "minecraft:netherite_chestplate",
                         "minecraft:netherite_leggins",
@@ -58,6 +60,9 @@ public class ChestLootConfig {
                         "minecraft:diamond_chestplate",
                         "minecraft:diamond_leggins",
                         "minecraft:diamond_boots"),o -> o instanceof String);
+        amountOfRareItems = (ForgeConfigSpec.IntValue) builder
+                .comment("Amount of Rare Items from end of list, others are default")
+                .define("amountOfRareItems",15);
         builder.pop();
 
         COMMON_CONFIG = builder.build();
