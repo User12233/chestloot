@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.*;
@@ -23,6 +24,7 @@ import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.ServerChatEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -35,11 +37,11 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.minecraftforge.server.ServerLifecycleHooks;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
 import org.slf4j.Logger;
 
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -85,42 +87,54 @@ public class Chestloot {
 
     @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD,modid = MODID,value = Dist.DEDICATED_SERVER)
     public static class EventsHandler {
+        private static ArrayList<BlockPos> posChests = new ArrayList<>() {};
         @SubscribeEvent
         public static void onPlayerRMB(PlayerInteractEvent.RightClickBlock event) {
             // Получаем состояние блока по позиции клика
             BlockState state = event.getEntity().level().getBlockState(event.getPos());
             if (state.getBlock() != chestcopy.get() || state.getBlock() == Blocks.AIR) {
-                LogUtils.getLogger().warn("Seems something isn't correct ");
                 return;
             }
             LOGGER.info("chestLoot executed");
             MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+            server.getGameRules().getRule(GameRules.RULE_ANNOUNCE_ADVANCEMENTS).set(false,server);
             server.getGameRules().getRule(GameRules.RULE_SENDCOMMANDFEEDBACK).set(false,server);
 
+            posChests.add(event.getPos());
             Objects.requireNonNull(server.getLevel(Level.OVERWORLD)).setBlock(event.getPos(),Blocks.AIR.defaultBlockState(),3);
             Random rand = new Random();
-            for(int i = 0; i<=rand.nextInt(1,5);i++) {
+            for(int i = 0; i<=rand.nextInt(1,4);i++) {
                 try {
-                    server.getCommands().getDispatcher().execute(server.getCommands().getDispatcher().parse("give " + event.getEntity().getName().getString() + " " + getRandomItem(), server.createCommandSourceStack()));
+                    String randomItem = "";
+                    if(!event.getEntity().getInventory().armor.isEmpty()) {
+                        randomItem = getRandomItem(true);
+                    } else {
+                        randomItem = getRandomItem(false);
+                    }
+                    server.getCommands().getDispatcher().execute(server.getCommands().getDispatcher().parse("give " + event.getEntity().getName().getString() + " " + randomItem, server.createCommandSourceStack()));
                 } catch(CommandSyntaxException e) {
                     LogUtils.getLogger().error("Failed to execute command ", e);
                 }
             }
-            Executors.newSingleThreadScheduledExecutor().schedule(() -> {
-                // Этот код выполняется в отдельном потоке, поэтому переключаемся на главный серверный поток:
-                ServerLifecycleHooks.getCurrentServer().execute(() -> {
-                    Objects.requireNonNull(ServerLifecycleHooks.getCurrentServer().getLevel(Level.OVERWORLD)).setBlock(event.getPos(),Blocks.CHEST.defaultBlockState(),3);
-                });
-            }, 75L, TimeUnit.MINUTES);
+            server.getGameRules().getRule(GameRules.RULE_SENDCOMMANDFEEDBACK).set(true,server);
+
         }
 
-        private static String getRandomItem() {
+        private static String getRandomItem(boolean isRareItemsAlreadyHave) {
             Random rand = new Random();
             double generatedInt = rand.nextDouble();
-            if(rand.nextInt() < 0.15 && generatedInt < 0.2) {
+            if(isRareItemsAlreadyHave) {
+                String result = ChestLootConfig.LootTable.get().get(rand.nextInt(0, ChestLootConfig.LootTable.get().size()-ChestLootConfig.amountOfRareItems.get()+1));
+                if (result.contains("AmmoId") || result.contains("cooked_beef")) {
+                    return result;
+                } else {
+                    return result + " 1";
+                }
+            }
+            if(rand.nextInt() < 0.9 && generatedInt < 0.8) {
                 return ChestLootConfig.LootTable.get().get(rand.nextInt(ChestLootConfig.LootTable.get().size()-ChestLootConfig.amountOfRareItems.get(), ChestLootConfig.LootTable.get().size()));
-            } else if(generatedInt < 0.2) {
-                String result = ChestLootConfig.LootTable.get().get(rand.nextInt(1, ChestLootConfig.LootTable.get().size()-ChestLootConfig.amountOfRareItems.get()+1));
+            } else if(generatedInt < 0.8) {
+                String result = ChestLootConfig.LootTable.get().get(rand.nextInt(0, ChestLootConfig.LootTable.get().size()-ChestLootConfig.amountOfRareItems.get()+1));
                 if (result.contains("AmmoId") || result.contains("cooked_beef")) {
                     return result;
                 } else {
@@ -129,6 +143,10 @@ public class Chestloot {
             } else {
                 return ChestLootConfig.LootTable.get().get(0);
             }
+        }
+
+        private static void returnBackChestToPlace(BlockPos pos) {
+            Objects.requireNonNull(ServerLifecycleHooks.getCurrentServer().getLevel(Level.OVERWORLD)).setBlock(pos, chestcopy.get().defaultBlockState(),3);
         }
         @SubscribeEvent
         public static void onPlayerCommandPreprocess(ServerChatEvent event) {
@@ -160,6 +178,22 @@ public class Chestloot {
                 int packedOverlay = 0;
 
                 int renderedWidth = mc.font.drawInBatch(text,x,y,color,true,matrix,buffer,displayMode,packedLight,packedOverlay);
+            }
+        }
+
+        private static int tickhavecompleted = 0;
+        private static int delay = 300;
+        @SubscribeEvent
+        public static void onTick(TickEvent.ServerTickEvent e) {
+            tickhavecompleted++;
+            if(tickhavecompleted >= delay) {
+                tickhavecompleted = 0;
+                if(posChests != null && !posChests.isEmpty()) {
+                    for(BlockPos pos : posChests) {
+                        returnBackChestToPlace(pos);
+                    }
+                    posChests.clear();
+                }
             }
         }
     }

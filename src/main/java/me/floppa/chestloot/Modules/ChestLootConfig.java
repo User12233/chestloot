@@ -12,7 +12,7 @@ public class ChestLootConfig {
     // Example configuration option
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> LootTable;
 
-    public static final ForgeConfigSpec.IntValue amountOfRareItems;
+    public static final ForgeConfigSpec.ConfigValue<Integer> amountOfRareItems;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -60,7 +60,7 @@ public class ChestLootConfig {
                         "minecraft:diamond_chestplate",
                         "minecraft:diamond_leggins",
                         "minecraft:diamond_boots"),o -> o instanceof String);
-        amountOfRareItems = (ForgeConfigSpec.IntValue) builder
+        amountOfRareItems = builder
                 .comment("Amount of Rare Items from end of list, others are default")
                 .define("amountOfRareItems",15);
         builder.pop();
