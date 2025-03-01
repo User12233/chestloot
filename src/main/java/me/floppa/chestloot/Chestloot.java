@@ -78,7 +78,7 @@ public class Chestloot {
 
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal("placeloot").requires(predicate -> predicate.getPlayer().getName().getString().equals("Dev"))
+        event.getDispatcher().register(Commands.literal("placeloot").requires(predicate -> ChestLootConfig.Admins.get().stream().anyMatch(nick -> Objects.requireNonNull(predicate.getPlayer()).getName().getString().equals(nick)))
                 .executes(context -> {
                     ServerPlayer player = context.getSource().getPlayer();
 

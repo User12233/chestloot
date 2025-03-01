@@ -17,6 +17,8 @@ public class ChestLootConfig {
 
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> chestsPositions;
 
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> Admins;
+
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
 
@@ -68,9 +70,10 @@ public class ChestLootConfig {
                 .define("amountOfRareItems",15);
         chestsPositions = builder
                 .comment("Positions of chests to spawn on map (format: x,y,z)")
-                .define("chestsPositions", Arrays.asList(
-                        "0,0,1",
-                        "0,0,2"),o -> o instanceof String);
+                .define("chestsPositions", List.of(), o -> o instanceof String);
+        Admins = builder
+                .comment("Add some admins")
+                .define("admins",List.of());
         builder.pop();
 
         COMMON_CONFIG = builder.build();
