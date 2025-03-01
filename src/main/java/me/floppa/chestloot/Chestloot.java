@@ -1,6 +1,7 @@
 package me.floppa.chestloot;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.logging.LogUtils;
 import me.floppa.chestloot.Modules.ChestLootConfig;
@@ -8,21 +9,27 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.*;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -37,13 +44,10 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.minecraftforge.server.ServerLifecycleHooks;
-import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
 import org.slf4j.Logger;
 
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(Chestloot.MODID)
@@ -69,19 +73,53 @@ public class Chestloot {
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(EventsHandler.class);
         // Register the item to a creative tab
-        modEventBus.addListener(this::addCreative);
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER,ChestLootConfig.COMMON_CONFIG);
     }
 
-    // Add the example block item to the building blocks tab
-    private void addCreative(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) event.accept(CHESTCOPY_ITEM);
+    @SubscribeEvent
+    public void onRegisterCommands(RegisterCommandsEvent event) {
+        event.getDispatcher().register(Commands.literal("placeloot").requires(predicate -> predicate.getPlayer().getName().getString().equals("Dev"))
+                .executes(context -> {
+                    ServerPlayer player = context.getSource().getPlayer();
+
+                    Vec3 eyePos = player.getEyePosition(1.0F);
+
+                    Vec3 lookVec = player.getLookAngle();
+
+                    Vec3 reachVec = eyePos.add(lookVec.scale(3));
+
+                    // Создаем ClipContext для определения блока (используем OUTLINE для учета краев блоков и игнорируем жидкости)
+                    ClipContext context1 = new ClipContext(eyePos, reachVec, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
+                    // Выполняем лучевое прослеживание
+                    BlockHitResult result = player.level().clip(context1);
+                    // Если луч попал в блок, возвращаем его координаты
+                    if (result.getType() == HitResult.Type.BLOCK) {
+                        BlockPos pos = result.getBlockPos().atY(result.getBlockPos().getY()+1);
+                        Objects.requireNonNull(ServerLifecycleHooks.getCurrentServer().getLevel(Level.OVERWORLD)).setBlock(pos,chestcopy.get().defaultBlockState(),3);
+                        addPosChestToConfig(pos);
+                    }
+                    return 0;
+                }));
+    }
+
+    public static void addPosChestToConfig(BlockPos pos) {
+        List<String> modifiableList = new ArrayList<>(ChestLootConfig.chestsPositions.get());
+        String cords = pos.getX() + "," + pos.getY() + "," + pos.getZ();
+        if(!modifiableList.contains(cords)) {
+            modifiableList.add(cords);
+            ChestLootConfig.chestsPositions.set(modifiableList);
+        }
     }
 
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
-        // Do something when the server starts
+        if(!ChestLootConfig.chestsPositions.get().isEmpty()) {
+            for (String pos : ChestLootConfig.chestsPositions.get()) {
+                String[] parts = pos.split(",");
+                EventsHandler.posChests.add(new BlockPos(Integer.parseInt(parts[0].trim()), Integer.parseInt(parts[1].trim()), Integer.parseInt(parts[2].trim())));
+            }
+        }
         LOGGER.info("chestLoot is fine");
     }
 
