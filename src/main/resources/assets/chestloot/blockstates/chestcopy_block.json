@@ -1,5 +1,5 @@
 {
   "variants": {
-    "": { "model": "chestloot:block/chestcopy" }
+    "": { "model": "chestloot:block/chestcopy_block" }
   }
 }
