@@ -116,16 +116,15 @@ public class Chestloot {
 
         private static String getRandomItem() {
             Random rand = new Random();
-            if(rand.nextInt() < 0.2) {
-                if(rand.nextBoolean()) {
-                    return ChestLootConfig.LootTable.get().get(rand.nextInt(31, 38));
+            int generatedInt = rand.nextInt();
+            if(rand.nextBoolean() && generatedInt < 0.2) {
+                return ChestLootConfig.LootTable.get().get(rand.nextInt(31, 38));
+            } else if(generatedInt < 0.2) {
+                String result = ChestLootConfig.LootTable.get().get(rand.nextInt(0, 30));
+                if (result.contains("AmmoId") || result.contains("cooked_beef")) {
+                    return result;
                 } else {
-                    String result = ChestLootConfig.LootTable.get().get(rand.nextInt(0, 30));
-                    if (result.contains("AmmoId") || result.contains("cooked_beef")) {
-                        return result;
-                    } else {
-                        return result + " 1";
-                    }
+                    return result + " 1";
                 }
             } else {
                 return ChestLootConfig.LootTable.get().get(0);
