@@ -47,6 +47,8 @@ public class ChestLootConfig {
                         "tacz:ammo{\"AmmoId\":\"tacz:9mm\"} 60",
                         "tacz:ammo{\"AmmoId\":\"tacz:762x39\"} 60",
                         "tacz:ammo{\"AmmoId\":\"tacz:308\"} 48",
+                        "tacz:ammo{\"AmmoId\":\"tacz:30_60\"} 36",
+                        "tacz:ammo{\"AmmoId\":\"tacz:12g\"} 36",
                         "minecraft:cooked_beef 9",
                         "minecraft:golden_apple",
                         "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m16a4\",\"GunCurrentAmmoCount\": 31,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
@@ -57,6 +59,7 @@ public class ChestLootConfig {
                         "tacz:modern_kinetic_gun{\"GunId\":\"tacz:ai_awp\",\"HasBulletInBarrel\": 1b,\"\"GunFireMode\": \"SEMI\",\"GunCurrentAmmoCount\": 5}",
                         "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m700\",\"GunCurrentAmmoCount\": 6,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
                         "tacz:modern_kinetic_gun{\"GunId\":\"tacz:deagle\",\"GunCurrentAmmoCount\": 8,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
+                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m870\",\"GunCurrentAmmoCount\": 8,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
                         "minecraft:netherite_helmet",
                         "minecraft:netherite_chestplate",
                         "minecraft:netherite_leggings",
@@ -66,8 +69,8 @@ public class ChestLootConfig {
                         "minecraft:diamond_leggings",
                         "minecraft:diamond_boots"),value -> value instanceof List);
         amountOfRareItems = builder
-                .comment("Amount of Rare Items from end of list, others are default")
-                .define("amountOfRareItems",15,value -> value instanceof Integer);
+                .comment("Amount of Rare Items from end of list, others are default, decrease the value to 1 (It's required to be after the last item)")
+                .define("amountOfRareItems",16,value -> value instanceof Integer);
         chestsPositions = builder
                 .comment("Positions of chests to spawn on map (format: x,y,z)")
                 .define("chestsPositions", List.of(), value -> value instanceof List);

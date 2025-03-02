@@ -151,7 +151,7 @@ public class Chestloot {
 
             posChests.add(event.getPos());
             Objects.requireNonNull(server.getLevel(Level.OVERWORLD)).setBlock(event.getPos(),Blocks.AIR.defaultBlockState(),3);
-            for(int i = 0; i<=1;i++) {
+            for(int i = 0; i<=new Random().nextInt(2,3);i++) {
                 try {
                     server.getCommands().getDispatcher().execute(server.getCommands().getDispatcher().parse("give " + event.getEntity().getName().getString() + " " + getRandomItem(), server.createCommandSourceStack()));
                 } catch(CommandSyntaxException e) {
@@ -165,7 +165,7 @@ public class Chestloot {
         private static String getRandomItem() {
             Random rand = new Random();
             double generatedInt = rand.nextDouble();
-            if(rand.nextInt() < 0.1 && generatedInt < 0.2) {
+            if(rand.nextInt() < 0.03 && generatedInt < 0.2) {
                 return ChestLootConfig.LootTable.get().get(rand.nextInt(ChestLootConfig.LootTable.get().size()-ChestLootConfig.amountOfRareItems.get(), ChestLootConfig.LootTable.get().size()));
             } else if(generatedInt < 0.2) {
                 String result = ChestLootConfig.LootTable.get().get(rand.nextInt(0, ChestLootConfig.LootTable.get().size()-ChestLootConfig.amountOfRareItems.get()+1));
