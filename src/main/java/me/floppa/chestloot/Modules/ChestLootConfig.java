@@ -53,27 +53,27 @@ public class ChestLootConfig {
                         "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m320\",\"GunCurrentAmmoCount\": 1,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
                         "tacz:modern_kinetic_gun{\"GunId\":\"tacz:ak47\",\"GunCurrentAmmoCount\": 31,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"AUTO\"}",
                         "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m4a1\",\"GunCurrentAmmoCount\": 30,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"AUTO\"}",
-                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:aug\",\"GunCurrentAmmoCount\": 30\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"AUTO\"}",
+                        "tacz:modern_kinetic_gun{\"GunId\":\"tacz:aug\",\"GunCurrentAmmoCount\": 30,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"AUTO\"}",
                         "tacz:modern_kinetic_gun{\"GunId\":\"tacz:ai_awp\",\"HasBulletInBarrel\": 1b,\"\"GunFireMode\": \"SEMI\",\"GunCurrentAmmoCount\": 5}",
                         "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m700\",\"GunCurrentAmmoCount\": 6,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
                         "tacz:modern_kinetic_gun{\"GunId\":\"tacz:deagle\",\"GunCurrentAmmoCount\": 8,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
                         "minecraft:netherite_helmet",
                         "minecraft:netherite_chestplate",
-                        "minecraft:netherite_leggins",
+                        "minecraft:netherite_leggings",
                         "minecraft:netherite_boots",
                         "minecraft:diamond_helmet",
                         "minecraft:diamond_chestplate",
-                        "minecraft:diamond_leggins",
-                        "minecraft:diamond_boots"),o -> o instanceof String);
+                        "minecraft:diamond_leggings",
+                        "minecraft:diamond_boots"),value -> value instanceof List);
         amountOfRareItems = builder
                 .comment("Amount of Rare Items from end of list, others are default")
-                .define("amountOfRareItems",15);
+                .define("amountOfRareItems",15,value -> value instanceof Integer);
         chestsPositions = builder
                 .comment("Positions of chests to spawn on map (format: x,y,z)")
-                .define("chestsPositions", List.of(), o -> o instanceof String);
+                .define("chestsPositions", List.of(), value -> value instanceof List);
         Admins = builder
                 .comment("Add some admins")
-                .define("admins",List.of());
+                .define("admins",List.of(),value -> value instanceof List);
         builder.pop();
 
         COMMON_CONFIG = builder.build();

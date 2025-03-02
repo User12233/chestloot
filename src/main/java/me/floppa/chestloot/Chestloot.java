@@ -1,7 +1,7 @@
 package me.floppa.chestloot;
 
+import com.google.common.collect.BoundType;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.logging.LogUtils;
 import me.floppa.chestloot.Modules.ChestLootConfig;
@@ -11,7 +11,12 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Vec3i;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.OutgoingChatMessage;
+import net.minecraft.network.chat.PlayerChatMessage;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.*;
@@ -33,6 +38,7 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -58,10 +64,10 @@ public class Chestloot {
     // Directly reference a slf4j logger
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final DeferredRegister<Block> REGISTER = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
-    public static final RegistryObject<Block> chestcopy = REGISTER.register("chestcopy_block",() -> new Block(BlockBehaviour.Properties.copy(Blocks.CHEST)));
+    public static final RegistryObject<Block> chestcopy = REGISTER.register("chestcopy_block",() -> new Block(BlockBehaviour.Properties.of()));
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
     public static final RegistryObject<Item> CHESTCOPY_ITEM = ITEMS.register("chestcopy", () ->
-            new BlockItem(chestcopy.get(), new Item.Properties().stacksTo(1)));
+            new BlockItem(chestcopy.get(), new Item.Properties().stacksTo(64)));
 
 
     public Chestloot() {
@@ -73,7 +79,7 @@ public class Chestloot {
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(EventsHandler.class);
         // Register the item to a creative tab
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER,ChestLootConfig.COMMON_CONFIG);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER,ChestLootConfig.COMMON_CONFIG,"chestloot-server.toml");
     }
 
     @SubscribeEvent
@@ -96,31 +102,36 @@ public class Chestloot {
                     if (result.getType() == HitResult.Type.BLOCK) {
                         BlockPos pos = result.getBlockPos().atY(result.getBlockPos().getY()+1);
                         Objects.requireNonNull(ServerLifecycleHooks.getCurrentServer().getLevel(Level.OVERWORLD)).setBlock(pos,chestcopy.get().defaultBlockState(),3);
-                        addPosChestToConfig(pos);
+                        addPosChestToConfig(context.getSource().getPlayer(),pos);
                     }
                     return 0;
                 }));
     }
 
-    public static void addPosChestToConfig(BlockPos pos) {
+    public static void addPosChestToConfig(ServerPlayer player, BlockPos pos) {
         List<String> modifiableList = new ArrayList<>(ChestLootConfig.chestsPositions.get());
         String cords = pos.getX() + "," + pos.getY() + "," + pos.getZ();
         if(!modifiableList.contains(cords)) {
             modifiableList.add(cords);
             ChestLootConfig.chestsPositions.set(modifiableList);
+        } else {
+            player.sendSystemMessage(Component.literal("§4Сундук уже существует"));
         }
     }
 
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
+        LOGGER.info("Checking chest positions in config");
         if(!ChestLootConfig.chestsPositions.get().isEmpty()) {
             for (String pos : ChestLootConfig.chestsPositions.get()) {
                 String[] parts = pos.split(",");
                 EventsHandler.posChests.add(new BlockPos(Integer.parseInt(parts[0].trim()), Integer.parseInt(parts[1].trim()), Integer.parseInt(parts[2].trim())));
             }
+            LOGGER.info("Chest positions are set!");
+        } else {
+            LOGGER.warn("Chest positions are empty");
         }
-        LOGGER.info("chestLoot is fine");
     }
 
     @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD,modid = MODID,value = Dist.DEDICATED_SERVER)
@@ -140,16 +151,9 @@ public class Chestloot {
 
             posChests.add(event.getPos());
             Objects.requireNonNull(server.getLevel(Level.OVERWORLD)).setBlock(event.getPos(),Blocks.AIR.defaultBlockState(),3);
-            Random rand = new Random();
-            for(int i = 0; i<=rand.nextInt(1,4);i++) {
+            for(int i = 0; i<=1;i++) {
                 try {
-                    String randomItem = "";
-                    if(!event.getEntity().getInventory().armor.isEmpty()) {
-                        randomItem = getRandomItem(true);
-                    } else {
-                        randomItem = getRandomItem(false);
-                    }
-                    server.getCommands().getDispatcher().execute(server.getCommands().getDispatcher().parse("give " + event.getEntity().getName().getString() + " " + randomItem, server.createCommandSourceStack()));
+                    server.getCommands().getDispatcher().execute(server.getCommands().getDispatcher().parse("give " + event.getEntity().getName().getString() + " " + getRandomItem(), server.createCommandSourceStack()));
                 } catch(CommandSyntaxException e) {
                     LogUtils.getLogger().error("Failed to execute command ", e);
                 }
@@ -158,20 +162,12 @@ public class Chestloot {
 
         }
 
-        private static String getRandomItem(boolean isRareItemsAlreadyHave) {
+        private static String getRandomItem() {
             Random rand = new Random();
             double generatedInt = rand.nextDouble();
-            if(isRareItemsAlreadyHave) {
-                String result = ChestLootConfig.LootTable.get().get(rand.nextInt(0, ChestLootConfig.LootTable.get().size()-ChestLootConfig.amountOfRareItems.get()+1));
-                if (result.contains("AmmoId") || result.contains("cooked_beef")) {
-                    return result;
-                } else {
-                    return result + " 1";
-                }
-            }
-            if(rand.nextInt() < 0.9 && generatedInt < 0.8) {
+            if(rand.nextInt() < 0.1 && generatedInt < 0.2) {
                 return ChestLootConfig.LootTable.get().get(rand.nextInt(ChestLootConfig.LootTable.get().size()-ChestLootConfig.amountOfRareItems.get(), ChestLootConfig.LootTable.get().size()));
-            } else if(generatedInt < 0.8) {
+            } else if(generatedInt < 0.2) {
                 String result = ChestLootConfig.LootTable.get().get(rand.nextInt(0, ChestLootConfig.LootTable.get().size()-ChestLootConfig.amountOfRareItems.get()+1));
                 if (result.contains("AmmoId") || result.contains("cooked_beef")) {
                     return result;
@@ -185,13 +181,6 @@ public class Chestloot {
 
         private static void returnBackChestToPlace(BlockPos pos) {
             Objects.requireNonNull(ServerLifecycleHooks.getCurrentServer().getLevel(Level.OVERWORLD)).setBlock(pos, chestcopy.get().defaultBlockState(),3);
-        }
-        @SubscribeEvent
-        public static void onPlayerCommandPreprocess(ServerChatEvent event) {
-            LOGGER.info(event.getRawText());
-            LOGGER.info(event.getMessage().getString());
-            LOGGER.info(event.getUsername());
-
         }
         @SubscribeEvent
         @OnlyIn(Dist.CLIENT)
@@ -220,11 +209,11 @@ public class Chestloot {
         }
 
         private static int tickhavecompleted = 0;
-        private static int delay = 300;
+        private static int delay = 9000;
         @SubscribeEvent
         public static void onTick(TickEvent.ServerTickEvent e) {
             tickhavecompleted++;
-            if(tickhavecompleted >= delay) {
+            if(tickhavecompleted >= delay ) {
                 tickhavecompleted = 0;
                 if(posChests != null && !posChests.isEmpty()) {
                     for(BlockPos pos : posChests) {
@@ -232,6 +221,13 @@ public class Chestloot {
                     }
                     posChests.clear();
                 }
+            }
+        }
+
+        @SubscribeEvent
+        public static void onBlockBreak(BlockEvent.BreakEvent e) {
+            if (ServerLifecycleHooks.getCurrentServer().getLevel(Level.OVERWORLD).getBlockState(e.getPos()).getBlock() == chestcopy.get()) {
+                e.setCanceled(true);
             }
         }
     }
