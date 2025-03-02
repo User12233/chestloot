@@ -42,6 +42,7 @@ import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
@@ -69,6 +70,7 @@ public class Chestloot {
     public static final RegistryObject<Item> CHESTCOPY_ITEM = ITEMS.register("chestcopy", () ->
             new BlockItem(chestcopy.get(), new Item.Properties().stacksTo(64)));
 
+    public static final Random rand = new Random();
 
     public Chestloot() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
@@ -103,6 +105,7 @@ public class Chestloot {
                         BlockPos pos = result.getBlockPos().atY(result.getBlockPos().getY()+1);
                         Objects.requireNonNull(ServerLifecycleHooks.getCurrentServer().getLevel(Level.OVERWORLD)).setBlock(pos,chestcopy.get().defaultBlockState(),3);
                         addPosChestToConfig(context.getSource().getPlayer(),pos);
+                        return 1;
                     }
                     return 0;
                 }));
@@ -141,9 +144,11 @@ public class Chestloot {
         public static void onPlayerRMB(PlayerInteractEvent.RightClickBlock event) {
             // Получаем состояние блока по позиции клика
             BlockState state = event.getEntity().level().getBlockState(event.getPos());
-            if (state.getBlock() != chestcopy.get() || state.getBlock() == Blocks.AIR) {
+            ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
+            if (state.getBlock() != chestcopy.get() || state.getBlock() == Blocks.AIR || event.getSide() == LogicalSide.CLIENT || player == null || player.getCooldowns().isOnCooldown(chestcopy.get().asItem())) {
                 return;
             }
+            player.getCooldowns().addCooldown(chestcopy.get().asItem(), 5);
             LOGGER.info("chestLoot executed");
             MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
             server.getGameRules().getRule(GameRules.RULE_ANNOUNCE_ADVANCEMENTS).set(false,server);
@@ -151,7 +156,7 @@ public class Chestloot {
 
             posChests.add(event.getPos());
             Objects.requireNonNull(server.getLevel(Level.OVERWORLD)).setBlock(event.getPos(),Blocks.AIR.defaultBlockState(),3);
-            for(int i = 0; i<=new Random().nextInt(2,3);i++) {
+            for(int i = 0; i<=1;i++) {
                 try {
                     server.getCommands().getDispatcher().execute(server.getCommands().getDispatcher().parse("give " + event.getEntity().getName().getString() + " " + getRandomItem(), server.createCommandSourceStack()));
                 } catch(CommandSyntaxException e) {
@@ -163,7 +168,6 @@ public class Chestloot {
         }
 
         private static String getRandomItem() {
-            Random rand = new Random();
             double generatedInt = rand.nextDouble();
             if(rand.nextInt() < 0.03 && generatedInt < 0.2) {
                 return ChestLootConfig.LootTable.get().get(rand.nextInt(ChestLootConfig.LootTable.get().size()-ChestLootConfig.amountOfRareItems.get(), ChestLootConfig.LootTable.get().size()));
