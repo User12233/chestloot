@@ -226,7 +226,7 @@ public class Chestloot {
 
         @SubscribeEvent
         public static void onBlockBreak(BlockEvent.BreakEvent e) {
-            if (ServerLifecycleHooks.getCurrentServer().getLevel(Level.OVERWORLD).getBlockState(e.getPos()).getBlock() == chestcopy.get()) {
+            if (Objects.requireNonNull(ServerLifecycleHooks.getCurrentServer().getLevel(Level.OVERWORLD)).getBlockState(e.getPos()).getBlock() == chestcopy.get()) {
                 e.setCanceled(true);
             }
         }
