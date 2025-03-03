@@ -19,9 +19,11 @@ public class ChestLootConfig {
 
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> chestsPositions;
 
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> Admins;
-
     public static final ForgeConfigSpec.ConfigValue<Integer> delayOnRespawn;
+
+    public static final ForgeConfigSpec.ConfigValue<Double> procentOnRare;
+
+    public static final ForgeConfigSpec.ConfigValue<Double> procentOnDefault;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -78,12 +80,15 @@ public class ChestLootConfig {
         chestsPositions = builder
                 .comment("Positions of chests to spawn on map (format: x,y,z)")
                 .define("chestsPositions", List.of(), value -> value instanceof List);
-        Admins = builder
-                .comment("Add some admins")
-                .define("admins",List.of(),value -> value instanceof List);
         delayOnRespawn = builder
                 .comment("Delay for respawning chests")
                 .define("delayOnRespawn",14000,value -> value instanceof Integer);
+        procentOnDefault = builder
+                .comment("Procent in non-full value, like 10% - 0.1, 20% - 0.2 and e.g")
+                .define("procentOnDefault",0.2,value -> value instanceof Double);
+        procentOnRare = builder
+                .define("procentOnDefault",0.03,value -> value instanceof Double);
+
         builder.pop();
 
         COMMON_CONFIG = builder.build();
@@ -91,9 +96,9 @@ public class ChestLootConfig {
 
     public static String getRandomItem() {
         double generatedInt = rand.nextDouble();
-        if(rand.nextInt() < 0.03 && generatedInt < 0.2) {
+        if(rand.nextDouble() < procentOnRare.get() && generatedInt < procentOnDefault.get()) {
             return LootTable.get().get(rand.nextInt(LootTable.get().size()-amountOfRareItems.get(), LootTable.get().size()));
-        } else if(generatedInt < 0.2) {
+        } else if(generatedInt < procentOnDefault.get()) {
             String result = LootTable.get().get(rand.nextInt(0, LootTable.get().size()-amountOfRareItems.get()+1));
             if (result.contains("AmmoId") || result.contains("cooked_beef")) {
                 return result;

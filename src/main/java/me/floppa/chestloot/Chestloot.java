@@ -8,24 +8,18 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.*;
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
@@ -70,36 +64,9 @@ public class Chestloot {
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER,ChestLootConfig.COMMON_CONFIG,"chestloot-server.toml");
     }
 
-    @SubscribeEvent
-    public void onRegisterCommands(RegisterCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal("placeloot").requires(predicate -> ChestLootConfig.Admins.get().stream().anyMatch(nick -> Objects.requireNonNull(predicate.getPlayer()).getName().getString().equals(nick)))
-                .executes(context -> {
-                    ServerPlayer player = context.getSource().getPlayer();
-
-                    Vec3 eyePos = player.getEyePosition(1.0F);
-
-                    Vec3 lookVec = player.getLookAngle();
-
-                    Vec3 reachVec = eyePos.add(lookVec.scale(3));
-
-                    // Создаем ClipContext для определения блока (используем OUTLINE для учета краев блоков и игнорируем жидкости)
-                    ClipContext context1 = new ClipContext(eyePos, reachVec, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
-                    // Выполняем лучевое прослеживание
-                    BlockHitResult result = player.level().clip(context1);
-                    // Если луч попал в блок, возвращаем его координаты
-                    if (result.getType() == HitResult.Type.BLOCK) {
-                        BlockPos pos = result.getBlockPos().atY(result.getBlockPos().getY()+1);
-                        Objects.requireNonNull(ServerLifecycleHooks.getCurrentServer().getLevel(Level.OVERWORLD)).setBlock(pos,chestcopy.get().defaultBlockState(),3);
-                        addPosChestToConfig(context.getSource().getPlayer(),pos);
-                        return 1;
-                    }
-                    return 0;
-                }));
-    }
-
-    public static void addPosChestToConfig(ServerPlayer player, BlockPos pos) {
+    public static void addPosChestToConfig(Entity player, BlockPos pos) {
         List<String> modifiableList = new ArrayList<>(ChestLootConfig.chestsPositions.get());
-        String cords = pos.getX() + "," + pos.getY() + "," + pos.getZ();
+        String cords = pos.getX() + "," + pos.getY() + "," + pos.getZ(); // parse to string
         if(!modifiableList.contains(cords)) {
             modifiableList.add(cords);
             ChestLootConfig.chestsPositions.set(modifiableList);
@@ -129,6 +96,14 @@ public class Chestloot {
     @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD,modid = MODID,value = Dist.DEDICATED_SERVER)
     public static class EventsHandler {
         private static ArrayList<BlockPos> posChests = new ArrayList<>() {};
+
+        @SubscribeEvent
+        public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
+            if(event.getPlacedBlock() == chestcopy.get().defaultBlockState()) {
+                posChests.add(event.getPos());
+                addPosChestToConfig(event.getEntity(),event.getPos());
+            }
+        }
 
         @SubscribeEvent
         @OnlyIn(Dist.CLIENT)
