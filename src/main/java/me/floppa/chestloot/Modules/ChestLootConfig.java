@@ -87,7 +87,7 @@ public class ChestLootConfig {
                 .comment("Procent in non-full value, like 10% - 0.1, 20% - 0.2 and e.g")
                 .define("procentOnDefault",0.2,value -> value instanceof Double);
         procentOnRare = builder
-                .define("procentOnDefault",0.03,value -> value instanceof Double);
+                .define("procentOnRare",0.03,value -> value instanceof Double);
 
         builder.pop();
 
