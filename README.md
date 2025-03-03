@@ -10,4 +10,6 @@
 
 `admins` players that allowed to use command /placeloot
 
+`delayOnRespawn` adjustable delay on respawn chests 
+
 ### Config located in .minecraft\saves\map\serverconfig\chestloot-server.toml
