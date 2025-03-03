@@ -19,6 +19,8 @@ public class ChestLootConfig {
 
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> Admins;
 
+    public static final ForgeConfigSpec.ConfigValue<Integer> delayOnRespawn;
+
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
 
@@ -77,6 +79,9 @@ public class ChestLootConfig {
         Admins = builder
                 .comment("Add some admins")
                 .define("admins",List.of(),value -> value instanceof List);
+        delayOnRespawn = builder
+                .comment("Delay for respawning chests")
+                .define("delayOnRespawn",14000,value -> value instanceof Integer);
         builder.pop();
 
         COMMON_CONFIG = builder.build();

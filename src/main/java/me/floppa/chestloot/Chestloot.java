@@ -213,7 +213,7 @@ public class Chestloot {
         }
 
         private static int tickhavecompleted = 0;
-        private static int delay = 9000;
+        private static int delay = 0;
         @SubscribeEvent
         public static void onTick(TickEvent.ServerTickEvent e) {
             tickhavecompleted++;
