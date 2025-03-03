@@ -1,5 +1,5 @@
 ## Chest loot
-`/placeloot` - place the chest loot, player must be admin in config (required to look down)
+Place the block chestloot:chestcopy to make new loot chest
 
 ## Config explain
 `LootTable` is list of items for give this to player
