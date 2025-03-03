@@ -1,32 +1,23 @@
 package me.floppa.chestloot;
 
-import com.google.common.collect.BoundType;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.logging.LogUtils;
 import me.floppa.chestloot.Modules.ChestLootConfig;
+import me.floppa.chestloot.Modules.ChestlootBlock;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.ChatType;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.OutgoingChatMessage;
-import net.minecraft.network.chat.PlayerChatMessage;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -35,14 +26,11 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
@@ -65,22 +53,20 @@ public class Chestloot {
     // Directly reference a slf4j logger
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final DeferredRegister<Block> REGISTER = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
-    public static final RegistryObject<Block> chestcopy = REGISTER.register("chestcopy_block",() -> new Block(BlockBehaviour.Properties.of()));
+    public static RegistryObject<Block> chestcopy = REGISTER.register("chestcopy_block",() -> new ChestlootBlock(BlockBehaviour.Properties.copy(Blocks.CHEST)));;
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
     public static final RegistryObject<Item> CHESTCOPY_ITEM = ITEMS.register("chestcopy", () ->
             new BlockItem(chestcopy.get(), new Item.Properties().stacksTo(64)));
 
-    public static final Random rand = new Random();
-
     public Chestloot() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        REGISTER.register(modEventBus);
         ITEMS.register(modEventBus);
+        REGISTER.register(modEventBus);
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(EventsHandler.class);
-        // Register the item to a creative tab
+
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER,ChestLootConfig.COMMON_CONFIG,"chestloot-server.toml");
     }
 
@@ -129,7 +115,9 @@ public class Chestloot {
         if(!ChestLootConfig.chestsPositions.get().isEmpty() && ChestLootConfig.delayOnRespawn.get() != null) {
             for (String pos : ChestLootConfig.chestsPositions.get()) {
                 String[] parts = pos.split(",");
-                EventsHandler.posChests.add(new BlockPos(Integer.parseInt(parts[0].trim()), Integer.parseInt(parts[1].trim()), Integer.parseInt(parts[2].trim())));
+                BlockPos result = new BlockPos(Integer.parseInt(parts[0].trim()), Integer.parseInt(parts[1].trim()), Integer.parseInt(parts[2].trim()));
+                EventsHandler.posChests.add(result);
+                Objects.requireNonNull(ServerLifecycleHooks.getCurrentServer().getLevel(Level.OVERWORLD)).setBlock(result, chestcopy.get().defaultBlockState(),3);
             }
             EventsHandler.delay = ChestLootConfig.delayOnRespawn.get();
             LOGGER.info("Delay on spawn, chest positions are set!");
@@ -141,52 +129,7 @@ public class Chestloot {
     @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD,modid = MODID,value = Dist.DEDICATED_SERVER)
     public static class EventsHandler {
         private static ArrayList<BlockPos> posChests = new ArrayList<>() {};
-        @SubscribeEvent
-        public static void onPlayerRMB(PlayerInteractEvent.RightClickBlock event) {
-            // Получаем состояние блока по позиции клика
-            BlockState state = event.getEntity().level().getBlockState(event.getPos());
-            ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
-            if (state.getBlock() != chestcopy.get() || state.getBlock() == Blocks.AIR || event.getSide() == LogicalSide.CLIENT || player == null || player.getCooldowns().isOnCooldown(chestcopy.get().asItem())) {
-                return;
-            }
-            player.getCooldowns().addCooldown(chestcopy.get().asItem(), 5);
-            LOGGER.info("chestLoot executed");
-            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-            server.getGameRules().getRule(GameRules.RULE_ANNOUNCE_ADVANCEMENTS).set(false,server);
-            server.getGameRules().getRule(GameRules.RULE_SENDCOMMANDFEEDBACK).set(false,server);
 
-            posChests.add(event.getPos());
-            Objects.requireNonNull(server.getLevel(Level.OVERWORLD)).setBlock(event.getPos(),Blocks.AIR.defaultBlockState(),3);
-            for(int i = 0; i<=1;i++) {
-                try {
-                    server.getCommands().getDispatcher().execute(server.getCommands().getDispatcher().parse("give " + event.getEntity().getName().getString() + " " + getRandomItem(), server.createCommandSourceStack()));
-                } catch(CommandSyntaxException e) {
-                    LogUtils.getLogger().error("Failed to execute command ", e);
-                }
-            }
-            server.getGameRules().getRule(GameRules.RULE_SENDCOMMANDFEEDBACK).set(true,server);
-
-        }
-
-        private static String getRandomItem() {
-            double generatedInt = rand.nextDouble();
-            if(rand.nextInt() < 0.03 && generatedInt < 0.2) {
-                return ChestLootConfig.LootTable.get().get(rand.nextInt(ChestLootConfig.LootTable.get().size()-ChestLootConfig.amountOfRareItems.get(), ChestLootConfig.LootTable.get().size()));
-            } else if(generatedInt < 0.2) {
-                String result = ChestLootConfig.LootTable.get().get(rand.nextInt(0, ChestLootConfig.LootTable.get().size()-ChestLootConfig.amountOfRareItems.get()+1));
-                if (result.contains("AmmoId") || result.contains("cooked_beef")) {
-                    return result;
-                } else {
-                    return result + " 1";
-                }
-            } else {
-                return ChestLootConfig.LootTable.get().get(0);
-            }
-        }
-
-        private static void returnBackChestToPlace(BlockPos pos) {
-            Objects.requireNonNull(ServerLifecycleHooks.getCurrentServer().getLevel(Level.OVERWORLD)).setBlock(pos, chestcopy.get().defaultBlockState(),3);
-        }
         @SubscribeEvent
         @OnlyIn(Dist.CLIENT)
         public static void onRenderGui(RenderGuiEvent.Post event) {
@@ -222,7 +165,7 @@ public class Chestloot {
                 tickhavecompleted = 0;
                 if(posChests != null && !posChests.isEmpty()) {
                     for(BlockPos pos : posChests) {
-                        returnBackChestToPlace(pos);
+                        Objects.requireNonNull(ServerLifecycleHooks.getCurrentServer().getLevel(Level.OVERWORLD)).setBlock(pos, chestcopy.get().defaultBlockState(),3);
                     }
                     posChests.clear();
                 }

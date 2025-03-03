@@ -1,14 +1,16 @@
 package me.floppa.chestloot.Modules;
 
-import net.minecraft.core.BlockPos;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 public class ChestLootConfig {
     // The common configuration spec
     public static final ForgeConfigSpec COMMON_CONFIG;
+
+    static Random rand = new Random();
 
     // Example configuration option
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> LootTable;
@@ -85,5 +87,21 @@ public class ChestLootConfig {
         builder.pop();
 
         COMMON_CONFIG = builder.build();
+    }
+
+    public static String getRandomItem() {
+        double generatedInt = rand.nextDouble();
+        if(rand.nextInt() < 0.03 && generatedInt < 0.2) {
+            return LootTable.get().get(rand.nextInt(LootTable.get().size()-amountOfRareItems.get(), LootTable.get().size()));
+        } else if(generatedInt < 0.2) {
+            String result = LootTable.get().get(rand.nextInt(0, LootTable.get().size()-amountOfRareItems.get()+1));
+            if (result.contains("AmmoId") || result.contains("cooked_beef")) {
+                return result;
+            } else {
+                return result + " 1";
+            }
+        } else {
+            return LootTable.get().get(0);
+        }
     }
 }
