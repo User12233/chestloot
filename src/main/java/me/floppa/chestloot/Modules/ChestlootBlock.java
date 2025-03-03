@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 public class ChestlootBlock extends Block {
+    Random rand = new Random();
     public ChestlootBlock(Properties pProperties) {
         super(pProperties);
     }
@@ -34,10 +35,12 @@ public class ChestlootBlock extends Block {
         server.getGameRules().getRule(GameRules.RULE_SENDCOMMANDFEEDBACK).set(false,server);
         player.getCooldowns().addCooldown(Chestloot.chestcopy.get().asItem(), 5);
         Objects.requireNonNull(server.getLevel(Level.OVERWORLD)).setBlock(pos, Blocks.AIR.defaultBlockState(),3);
-        try {
-            server.getCommands().getDispatcher().execute(server.getCommands().getDispatcher().parse("give " + player.getName().getString() + " " + ChestLootConfig.getRandomItem(), server.createCommandSourceStack()));
-        } catch (CommandSyntaxException e) {
-            LogUtils.getLogger().error("Failed to execute command ", e);
+        for(int i = 0;i<=rand.nextInt(ChestLootConfig.amountToGiveMin.get(), ChestLootConfig.amountToGiveMax.get());i++) {
+            try {
+                server.getCommands().getDispatcher().execute(server.getCommands().getDispatcher().parse("give " + player.getName().getString() + " " + ChestLootConfig.getRandomItem(), server.createCommandSourceStack()));
+            } catch (CommandSyntaxException e) {
+                LogUtils.getLogger().error("Failed to execute command ", e);
+            }
         }
         server.getGameRules().getRule(GameRules.RULE_SENDCOMMANDFEEDBACK).set(true,server);
         return InteractionResult.SUCCESS;

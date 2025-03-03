@@ -25,6 +25,10 @@ public class ChestLootConfig {
 
     public static final ForgeConfigSpec.ConfigValue<Double> procentOnDefault;
 
+    public static final ForgeConfigSpec.ConfigValue<Integer> amountToGiveMin;
+
+    public static final ForgeConfigSpec.ConfigValue<Integer> amountToGiveMax;
+
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
 
@@ -88,6 +92,11 @@ public class ChestLootConfig {
                 .define("procentOnDefault",0.2,value -> value instanceof Double);
         procentOnRare = builder
                 .define("procentOnRare",0.03,value -> value instanceof Double);
+        amountToGiveMin = builder
+                .comment("Amount to give random items from chest")
+                .define("amountToGiveMin",1,value -> value instanceof Integer);
+        amountToGiveMax = builder
+                .define("amountToGiveMax",3,value -> value instanceof Integer);
 
         builder.pop();
 
