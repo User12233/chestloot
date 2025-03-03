@@ -126,14 +126,15 @@ public class Chestloot {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         LOGGER.info("Checking chest positions in config");
-        if(!ChestLootConfig.chestsPositions.get().isEmpty()) {
+        if(!ChestLootConfig.chestsPositions.get().isEmpty() && ChestLootConfig.delayOnRespawn.get() != null) {
             for (String pos : ChestLootConfig.chestsPositions.get()) {
                 String[] parts = pos.split(",");
                 EventsHandler.posChests.add(new BlockPos(Integer.parseInt(parts[0].trim()), Integer.parseInt(parts[1].trim()), Integer.parseInt(parts[2].trim())));
             }
-            LOGGER.info("Chest positions are set!");
+            EventsHandler.delay = ChestLootConfig.delayOnRespawn.get();
+            LOGGER.info("Delay on spawn, chest positions are set!");
         } else {
-            LOGGER.warn("Chest positions are empty");
+            LOGGER.warn("Chest positions are empty or delay on spawn is null");
         }
     }
 
