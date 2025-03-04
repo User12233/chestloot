@@ -126,11 +126,11 @@ public class ChestLootConfig {
                 .comment("Procent in non-full value, like 10% - 0.1, 20% - 0.2 and e.g")
                 .define("procentOnAmmo",0.2,value -> value instanceof Double);
         procentOnWeapon = builder
-                .define("procentOnWeapon",0.2,value -> value instanceof Double);
+                .define("procentOnWeapon",0.3,value -> value instanceof Double);
         procentOnArmor = builder
                 .define("procentOnArmor",0.1,value -> value instanceof Double);
         procentOnOthers = builder
-                .define("procentOnOthers",0.5,value -> value instanceof Double);
+                .define("procentOnOthers",0.4,value -> value instanceof Double);
 
         //
 
