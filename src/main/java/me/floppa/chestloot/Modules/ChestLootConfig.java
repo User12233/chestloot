@@ -1,5 +1,6 @@
 package me.floppa.chestloot.Modules;
 
+import com.mojang.logging.LogUtils;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 import java.util.Arrays;
@@ -15,15 +16,32 @@ public class ChestLootConfig {
     // Example configuration option
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> LootTable;
 
-    public static final ForgeConfigSpec.ConfigValue<Integer> amountOfRareItems;
+    // Amount of items for give
+
+    public static final ForgeConfigSpec.ConfigValue<Integer> amountOfWeaponItems;
+
+    public static final ForgeConfigSpec.ConfigValue<Integer> amountOfAmmoItems;
+
+    public static final ForgeConfigSpec.ConfigValue<Integer> amountOfArmorItems;
+
+    public static final ForgeConfigSpec.ConfigValue<Integer> amountOfOtherItems;
+
+    //
 
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> chestsPositions;
 
     public static final ForgeConfigSpec.ConfigValue<Integer> delayOnRespawn;
 
-    public static final ForgeConfigSpec.ConfigValue<Double> procentOnRare;
+    // Procents
+    public static final ForgeConfigSpec.ConfigValue<Double> procentOnWeapon;
 
-    public static final ForgeConfigSpec.ConfigValue<Double> procentOnDefault;
+    public static final ForgeConfigSpec.ConfigValue<Double> procentOnAmmo;
+
+    public static final ForgeConfigSpec.ConfigValue<Double> procentOnArmor;
+
+    public static final ForgeConfigSpec.ConfigValue<Double> procentOnOthers;
+
+    //
 
     public static final ForgeConfigSpec.ConfigValue<Integer> amountToGiveMin;
 
@@ -45,6 +63,8 @@ public class ChestLootConfig {
                         "peterswarfare:flashbang",
                         "peterswarfare:fraggrenade",
                         "peterswarfare:smokegrenade",
+                        "minecraft:cooked_beef 9",
+                        "minecraft:golden_apple",
                         "tacz:attachment{\"AttachmentId\":\"tacz:muzzle_silencer_knight_qd\"}",
                         "tacz:attachment{\"AttachmentId\":\"gucci_attachments:scope_karrina\"}",
                         "tacz:attachment{\"AttachmentId\":\"tacz:sight_uh1\"}",
@@ -58,8 +78,6 @@ public class ChestLootConfig {
                         "tacz:ammo{\"AmmoId\":\"tacz:308\"} 48",
                         "tacz:ammo{\"AmmoId\":\"tacz:12g\"} 36",
                         "tacz:ammo{\"AmmoId\":\"tacz:50ae\"} 36",
-                        "minecraft:cooked_beef 9",
-                        "minecraft:golden_apple",
                         "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m16a4\",\"GunCurrentAmmoCount\": 31,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
                         "tacz:modern_kinetic_gun{\"GunId\":\"tacz:m320\",\"GunCurrentAmmoCount\": 1,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"SEMI\"}",
                         "tacz:modern_kinetic_gun{\"GunId\":\"tacz:ak47\",\"GunCurrentAmmoCount\": 31,\"HasBulletInBarrel\": 1b,\"GunFireMode\": \"AUTO\"}",
@@ -78,20 +96,44 @@ public class ChestLootConfig {
                         "minecraft:diamond_chestplate",
                         "minecraft:diamond_leggings",
                         "minecraft:diamond_boots"),value -> value instanceof List);
-        amountOfRareItems = builder
-                .comment("Amount of Rare Items from end of list, others are default, decrease the value to 1 (It's required to be after the last item)")
-                .define("amountOfRareItems",17,value -> value instanceof Integer);
+        // Amount of items for give
+
+        amountOfWeaponItems = builder
+                .comment("Amount of Rare Items from end of list, must look like this Others,ammo,weapons,armors")
+                .define("amountOfWeaponItems",10,value -> value instanceof Integer);
+
+        amountOfAmmoItems = builder
+                .define("amountOfAmmoItems",9,value -> value instanceof Integer);
+
+        amountOfArmorItems = builder
+                .define("amountOfArmorItems",8,value -> value instanceof Integer);
+
+        amountOfOtherItems = builder
+                .define("amountOfOtherItems",11,value -> value instanceof Integer);
+
+        //
+
         chestsPositions = builder
                 .comment("Positions of chests to spawn on map (format: x,y,z)")
                 .define("chestsPositions", List.of(), value -> value instanceof List);
+
         delayOnRespawn = builder
                 .comment("Delay for respawning chests")
                 .define("delayOnRespawn",14000,value -> value instanceof Integer);
-        procentOnDefault = builder
+
+        // Procents
+        procentOnAmmo = builder
                 .comment("Procent in non-full value, like 10% - 0.1, 20% - 0.2 and e.g")
-                .define("procentOnDefault",0.2,value -> value instanceof Double);
-        procentOnRare = builder
-                .define("procentOnRare",0.03,value -> value instanceof Double);
+                .define("procentOnAmmo",0.2,value -> value instanceof Double);
+        procentOnWeapon = builder
+                .define("procentOnWeapon",0.2,value -> value instanceof Double);
+        procentOnArmor = builder
+                .define("procentOnArmor",0.1,value -> value instanceof Double);
+        procentOnOthers = builder
+                .define("procentOnOthers",0.5,value -> value instanceof Double);
+
+        //
+
         amountToGiveMin = builder
                 .comment("Amount to give random items from chest")
                 .define("amountToGiveMin",1,value -> value instanceof Integer);
@@ -105,17 +147,15 @@ public class ChestLootConfig {
 
     public static String getRandomItem() {
         double generatedInt = rand.nextDouble();
-        if(rand.nextDouble() < procentOnRare.get() && generatedInt < procentOnDefault.get()) {
-            return LootTable.get().get(rand.nextInt(LootTable.get().size()-amountOfRareItems.get(), LootTable.get().size()));
-        } else if(generatedInt < procentOnDefault.get()) {
-            String result = LootTable.get().get(rand.nextInt(0, LootTable.get().size()-amountOfRareItems.get()+1));
-            if (result.contains("AmmoId") || result.contains("cooked_beef")) {
-                return result;
-            } else {
-                return result + " 1";
-            }
-        } else {
-            return LootTable.get().get(0);
+        if(generatedInt < procentOnAmmo.get()) {
+            return LootTable.get().get(rand.nextInt(LootTable.get().size()-amountOfAmmoItems.get()-amountOfWeaponItems.get()-amountOfArmorItems.get(),LootTable.get().size()-amountOfWeaponItems.get()-amountOfArmorItems.get()-1));
+        } else if(generatedInt < procentOnWeapon.get()) {
+            return LootTable.get().get(rand.nextInt(LootTable.get().size()-amountOfWeaponItems.get()-amountOfArmorItems.get(),LootTable.get().size()-amountOfArmorItems.get()-1));
+        } else if(generatedInt < procentOnArmor.get()) {
+            return LootTable.get().get(rand.nextInt(LootTable.get().size()-amountOfArmorItems.get()-1,LootTable.get().size()));
+        } else if(generatedInt < procentOnOthers.get()) {
+            return LootTable.get().get(rand.nextInt(0,LootTable.get().size()-amountOfAmmoItems.get()-amountOfWeaponItems.get()-amountOfArmorItems.get()-1));
         }
+        return "minecraft:air";
     }
 }
