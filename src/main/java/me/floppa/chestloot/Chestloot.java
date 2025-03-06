@@ -4,8 +4,11 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
 import me.floppa.chestloot.Modules.ChestLootConfig;
 import me.floppa.chestloot.Modules.ChestlootBlock;
+import me.floppa.chestloot.Modules.ChestlootContainer;
+import me.floppa.chestloot.Modules.ChestlootScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
@@ -28,6 +31,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -57,6 +61,7 @@ public class Chestloot {
 
         ITEMS.register(modEventBus);
         REGISTER.register(modEventBus);
+        ChestlootContainer.register(modEventBus);
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(EventsHandler.class);
@@ -90,6 +95,13 @@ public class Chestloot {
             LOGGER.info("Delay on spawn, chest positions are set!");
         } else {
             LOGGER.warn("Chest positions are empty or delay on spawn is null");
+        }
+    }
+    @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    public static class ClientSetup {
+        @SubscribeEvent
+        public static void onClientSetup(FMLClientSetupEvent event) {
+            event.enqueueWork(() -> MenuScreens.register(ChestlootContainer.CHESTLOOT_CONTAINER.get(), ChestlootScreen::new));
         }
     }
 

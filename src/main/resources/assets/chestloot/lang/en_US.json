@@ -1,4 +1,4 @@
 {
   "block.chestloot.chestcopy_block": "Chest's copy",
-  "ui.chestloot.chestcopy_block": "Loot"
+  "container.chestloot": "Loot"
 }
