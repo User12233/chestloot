@@ -43,78 +43,84 @@ public class ChestlootContainer extends AbstractContainerMenu {
         super(CHESTLOOT_CONTAINER.get(), id);
         this.containerlevel = ContainerLevelAccess.create(player.level(), pos);
         chestcontainer = new ItemStackHandler(27);
-        final int slotSizeP1us2 = 18, startX = 8, startY = 86, hotbarY = 142;
-        for(int column = 0; column < 9; ++column) {
-            for(int row = 0; row < 3; ++row) {
-                addSlot(new Slot(inv,8 + row * 8 + column,startX + column * slotSizeP1us2,startY + row * slotSizeP1us2 - 2)); // add slots in chest
-            }
-            addSlot(new Slot(inv,column,8 + column * slotSizeP1us2,hotbarY)); // adding hotbar of player's items
-        }
+        int i = (3 - 4) * 18;
 
-
-        // chest's container
-        final int slotSizeP1us22 = 18, startXX = 8, startYY = 18;
-        for(int column = 0; column < 9; ++column) {
-            for(int row = 0; row < 3; ++row) {
-                addSlot(new SlotItemHandler(chestcontainer,row * 8 + column,startXX + column * slotSizeP1us22,startYY + row * slotSizeP1us22));
+        for(int j = 0; j < 3; ++j) {
+            for(int k = 0; k < 9; ++k) {
+                this.addSlot(new SlotItemHandler(chestcontainer, k + j * 9, 8 + k * 18, 18 + j * 18));
             }
         }
-        for(int i = 0; i<rand.nextInt(ChestLootConfig.amountToGiveMin.get(), ChestLootConfig.amountToGiveMax.get()); i++) {
-            ItemStack stack = chestcontainer.getStackInSlot(i);
-            if (stack.isEmpty()) {
-                String givenitem = ChestLootConfig.getRandomItem();
-                String parts = givenitem.replaceFirst(":", " ");
-                String[] part2 = parts.split(" ");
-                LogUtils.getLogger().info(parts);
-                try {
-                    switch (part2[1]) {
-                        case "ammo" -> {
-                            LogUtils.getLogger().info(part2[2]);
-                            JsonObject jsonObject = JsonParser.parseString(part2[2]).getAsJsonObject();
-                            CompoundTag tag = new CompoundTag();
-                            tag.putString("AmmoId", jsonObject.get("AmmoId").getAsString());
-                            ItemStack item = new ItemStack(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(part2[0], part2[1]))), Integer.parseInt(part2[3]));
-                            item.setTag(tag);
-                            chestcontainer.insertItem(i,item,false);
-                        }
-                        case "modern_kinetic_gun" -> {
-                            LogUtils.getLogger().info(part2[2]);
-                            JsonObject jsonObject = JsonParser.parseString(part2[2]).getAsJsonObject();
-                            CompoundTag tag = new CompoundTag();
-                            tag.putString("GunId", jsonObject.get("GunId").getAsString());
-                            tag.putString("GunCurrentAmmoCount", jsonObject.get("GunCurrentAmmoCount").getAsString());
-                            tag.putString("HasBulletInBarrel", jsonObject.get("HasBulletInBarrel").getAsString());
-                            tag.putString("GunFireMode", jsonObject.get("GunFireMode").getAsString());
-                            ItemStack item = new ItemStack(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(part2[0], part2[1]))));
-                            item.setTag(tag);
-                            chestcontainer.insertItem(i,item,false);
-                        }
-                        case "attachment" -> {
-                            LogUtils.getLogger().info(part2[2]);
-                            JsonObject jsonObject = JsonParser.parseString(part2[2]).getAsJsonObject();
-                            CompoundTag tag = new CompoundTag();
-                            tag.putString("AttachmentId", jsonObject.get("AttachmentId").getAsString());
-                            ItemStack item = new ItemStack(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(part2[0], part2[1]))));
-                            item.setTag(tag);
-                            chestcontainer.insertItem(i,item,false);
-                        }
-                        default -> {
-                            String[] idandname = parts.split(" ");
-                            int count = 1;
-                            if (idandname.length >= 3) {
-                                try {
-                                    count = Integer.parseInt(idandname[2]);
-                                } catch (NumberFormatException e) {
-                                    LogUtils.getLogger().info(e.getMessage());
-                                }
-                            }
-                            chestcontainer.insertItem(i,new ItemStack(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(idandname[0], idandname[1]))), count),false);
-                        }
+
+        for(int l = 0; l < 3; ++l) {
+            for(int j1 = 0; j1 < 9; ++j1) {
+                this.addSlot(new Slot(inv, j1 + l * 9 + 9, 8 + j1 * 18, 103 + l * 18 + i));
+            }
+        }
+
+        for(int i1 = 0; i1 < 9; ++i1) {
+            this.addSlot(new Slot(inv, i1, 8 + i1 * 18, 161 + i));
+        }
+        for(int ia = 0; ia<rand.nextInt(ChestLootConfig.amountToGiveMin.get(), ChestLootConfig.amountToGiveMax.get()); ia++) {
+            String givenitem = ChestLootConfig.getRandomItem();
+            String parts = givenitem.replaceFirst(":", " ");
+            String[] part2 = parts.split(" ");
+            LogUtils.getLogger().info(parts);
+            try {
+                switch (part2[1]) {
+                    case "ammo" -> {
+                        LogUtils.getLogger().info(part2[2]);
+                        JsonObject jsonObject = JsonParser.parseString(part2[2]).getAsJsonObject();
+                        CompoundTag tag = new CompoundTag();
+                        tag.putString("AmmoId", jsonObject.get("AmmoId").getAsString());
+                        ItemStack item = new ItemStack(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(part2[0], part2[1]))), Integer.parseInt(part2[3]));
+                        item.setTag(tag);
+                        chestcontainer.insertItem(ia,item,false);
                     }
-                    LogUtils.getLogger().info(parts);
-                } catch (Exception e) {
-                    LogUtils.getLogger().info("Error occurred with chestloot - " + e.getMessage());
+                    case "modern_kinetic_gun" -> {
+                        LogUtils.getLogger().info(part2[2]);
+                        JsonObject jsonObject = JsonParser.parseString(part2[2]).getAsJsonObject();
+                        CompoundTag tag = new CompoundTag();
+                        tag.putString("GunId", jsonObject.get("GunId").getAsString());
+                        tag.putString("GunCurrentAmmoCount", jsonObject.get("GunCurrentAmmoCount").getAsString());
+                        tag.putString("HasBulletInBarrel", jsonObject.get("HasBulletInBarrel").getAsString());
+                        tag.putString("GunFireMode", jsonObject.get("GunFireMode").getAsString());
+                        ItemStack item = new ItemStack(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(part2[0], part2[1]))));
+                        item.setTag(tag);
+                        chestcontainer.insertItem(ia,item,false);
+                    }
+                    case "attachment" -> {
+                        LogUtils.getLogger().info(part2[2]);
+                        JsonObject jsonObject = JsonParser.parseString(part2[2]).getAsJsonObject();
+                        CompoundTag tag = new CompoundTag();
+                        tag.putString("AttachmentId", jsonObject.get("AttachmentId").getAsString());
+                        ItemStack item = new ItemStack(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(part2[0], part2[1]))));
+                        item.setTag(tag);
+                        chestcontainer.insertItem(ia,item,false);
+                    }
+                    case "potion" -> {
+                        CompoundTag tag = new CompoundTag();
+                        tag.putString("Potion", part2[2].replace("{}", "").split(":")[1].replace("}",""));
+                        ItemStack item = new ItemStack(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(part2[0], part2[1]))));
+                        item.setTag(tag);
+                        LogUtils.getLogger().info("Test {}", part2[2].replace("{}", "").split(":")[1] + tag.getAsString());
+                        chestcontainer.insertItem(ia,item,false);
+                    }
+                    default -> {
+                        String[] idandname = parts.split(" ");
+                        int count = 1;
+                        if (idandname.length >= 3) {
+                            try {
+                                count = Integer.parseInt(idandname[2]);
+                            } catch (NumberFormatException e) {
+                                LogUtils.getLogger().info(e.getMessage());
+                            }
+                        }
+                        chestcontainer.insertItem(ia,new ItemStack(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(idandname[0], idandname[1]))), count),false);
+                    }
                 }
+                LogUtils.getLogger().info(parts);
+            } catch (Exception e) {
+                LogUtils.getLogger().info("Error occurred with chestloot - " + e.getMessage());
             }
         }
     }
