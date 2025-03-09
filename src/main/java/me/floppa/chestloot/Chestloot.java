@@ -67,6 +67,7 @@ public class Chestloot {
         MinecraftForge.EVENT_BUS.register(EventsHandler.class);
 
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER,ChestLootConfig.COMMON_CONFIG,"chestloot-server.toml");
+        EventsHandler.delay = ChestLootConfig.delayOnRespawn.get();
     }
 
     public static void addPosChestToConfig(Entity player, BlockPos pos) {
