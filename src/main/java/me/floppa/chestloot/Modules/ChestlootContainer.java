@@ -1,8 +1,13 @@
 package me.floppa.chestloot.Modules;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.mojang.logging.LogUtils;
 import me.floppa.chestloot.Chestloot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.flag.FeatureFlagSet;
@@ -12,12 +17,15 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.SlotItemHandler;
-import net.minecraftforge.items.wrapper.PlayerInvWrapper;
 import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+
+import static me.floppa.chestloot.Modules.ChestLootConfig.rand;
+
 public class ChestlootContainer extends AbstractContainerMenu {
 
     public static final DeferredRegister<MenuType<?>> CONTAINERS = DeferredRegister.create(Registries.MENU, Chestloot.MODID);
@@ -28,10 +36,10 @@ public class ChestlootContainer extends AbstractContainerMenu {
     private final IItemHandler chestcontainer;
     //client
     public ChestlootContainer(int id, Inventory inv) {
-        this(id,inv,inv.player,BlockPos.ZERO,new ArrayList<>());
+        this(id,inv,inv.player,BlockPos.ZERO);
     }
     // Server
-    public ChestlootContainer(int id, Inventory inv, Player player, BlockPos pos, List<ItemStack> items) {
+    public ChestlootContainer(int id, Inventory inv, Player player, BlockPos pos) {
         super(CHESTLOOT_CONTAINER.get(), id);
         this.containerlevel = ContainerLevelAccess.create(player.level(), pos);
         chestcontainer = new ItemStackHandler(27);
@@ -51,11 +59,61 @@ public class ChestlootContainer extends AbstractContainerMenu {
                 addSlot(new SlotItemHandler(chestcontainer,row * 8 + column,startXX + column * slotSizeP1us22,startYY + row * slotSizeP1us22));
             }
         }
-        for(ItemStack itemstack : items) {
-            for (int i = 0; i < items.size(); i++) {
-                ItemStack stack = items.get(i);
-                if (stack != null && stack.isEmpty()) {
-                    chestcontainer.insertItem(i, itemstack, false);
+        for(int i = 0; i<rand.nextInt(ChestLootConfig.amountToGiveMin.get(), ChestLootConfig.amountToGiveMax.get()); i++) {
+            ItemStack stack = chestcontainer.getStackInSlot(i);
+            if (stack.isEmpty()) {
+                String givenitem = ChestLootConfig.getRandomItem();
+                String parts = givenitem.replaceFirst(":", " ");
+                String[] part2 = parts.split(" ");
+                LogUtils.getLogger().info(parts);
+                try {
+                    switch (part2[1]) {
+                        case "ammo" -> {
+                            LogUtils.getLogger().info(part2[2]);
+                            JsonObject jsonObject = JsonParser.parseString(part2[2]).getAsJsonObject();
+                            CompoundTag tag = new CompoundTag();
+                            tag.putString("AmmoId", jsonObject.get("AmmoId").getAsString());
+                            ItemStack item = new ItemStack(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(part2[0], part2[1]))), Integer.parseInt(part2[3]));
+                            item.setTag(tag);
+                            chestcontainer.insertItem(i,item,false);
+                        }
+                        case "modern_kinetic_gun" -> {
+                            LogUtils.getLogger().info(part2[2]);
+                            JsonObject jsonObject = JsonParser.parseString(part2[2]).getAsJsonObject();
+                            CompoundTag tag = new CompoundTag();
+                            tag.putString("GunId", jsonObject.get("GunId").getAsString());
+                            tag.putString("GunCurrentAmmoCount", jsonObject.get("GunCurrentAmmoCount").getAsString());
+                            tag.putString("HasBulletInBarrel", jsonObject.get("HasBulletInBarrel").getAsString());
+                            tag.putString("GunFireMode", jsonObject.get("GunFireMode").getAsString());
+                            ItemStack item = new ItemStack(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(part2[0], part2[1]))));
+                            item.setTag(tag);
+                            chestcontainer.insertItem(i,item,false);
+                        }
+                        case "attachment" -> {
+                            LogUtils.getLogger().info(part2[2]);
+                            JsonObject jsonObject = JsonParser.parseString(part2[2]).getAsJsonObject();
+                            CompoundTag tag = new CompoundTag();
+                            tag.putString("AttachmentId", jsonObject.get("AttachmentId").getAsString());
+                            ItemStack item = new ItemStack(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(part2[0], part2[1]))));
+                            item.setTag(tag);
+                            chestcontainer.insertItem(i,item,false);
+                        }
+                        default -> {
+                            String[] idandname = parts.split(" ");
+                            int count = 1;
+                            if (idandname.length >= 3) {
+                                try {
+                                    count = Integer.parseInt(idandname[2]);
+                                } catch (NumberFormatException e) {
+                                    LogUtils.getLogger().info(e.getMessage());
+                                }
+                            }
+                            chestcontainer.insertItem(i,new ItemStack(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(idandname[0], idandname[1]))), count),false);
+                        }
+                    }
+                    LogUtils.getLogger().info(parts);
+                } catch (Exception e) {
+                    LogUtils.getLogger().info("Error occurred with chestloot - " + e.getMessage());
                 }
             }
         }
@@ -67,32 +125,27 @@ public class ChestlootContainer extends AbstractContainerMenu {
 
     @Override
     public @NotNull ItemStack quickMoveStack(@NotNull Player pPlayer, int pIndex) {
-            var retStack = ItemStack.EMPTY;
-            final Slot slot = this.slots.get(pIndex);
-            if (slot.hasItem()) {
-                final ItemStack stack = slot.getItem();
-                retStack = stack.copy();
-
-                final int size = this.slots.size() - pPlayer.getInventory().getContainerSize();
-                if (pIndex < size) {
-                    if (!moveItemStackTo(stack, 0, this.slots.size(), false))
-                        return ItemStack.EMPTY;
-                } else if (!moveItemStackTo(stack, 0, size, false))
+        ItemStack itemstack = ItemStack.EMPTY;
+        Slot slot = this.slots.get(pIndex);
+        if (slot != null && slot.hasItem()) {
+            ItemStack itemstack1 = slot.getItem();
+            itemstack = itemstack1.copy();
+            if (pIndex < 3 * 9) {
+                if (!this.moveItemStackTo(itemstack1, 3 * 9, this.slots.size(), true)) {
                     return ItemStack.EMPTY;
-
-                if (stack.isEmpty() || stack.getCount() == 0) {
-                    slot.set(ItemStack.EMPTY);
-                } else {
-                    slot.setChanged();
                 }
-
-                if (stack.getCount() == retStack.getCount())
-                    return ItemStack.EMPTY;
-
-                slot.onTake(pPlayer, stack);
+            } else if (!this.moveItemStackTo(itemstack1, 0, 3 * 9, false)) {
+                return ItemStack.EMPTY;
             }
 
-            return retStack;
+            if (itemstack1.isEmpty()) {
+                slot.setByPlayer(ItemStack.EMPTY);
+            } else {
+                slot.setChanged();
+            }
+        }
+
+        return itemstack;
         }
 
     @Override

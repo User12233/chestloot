@@ -1,16 +1,13 @@
 package me.floppa.chestloot;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
 import me.floppa.chestloot.Modules.ChestLootConfig;
 import me.floppa.chestloot.Modules.ChestlootBlock;
 import me.floppa.chestloot.Modules.ChestlootContainer;
 import me.floppa.chestloot.Modules.ChestlootScreen;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
@@ -37,7 +34,6 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.minecraftforge.server.ServerLifecycleHooks;
-import org.joml.Matrix4f;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -65,7 +61,6 @@ public class Chestloot {
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(EventsHandler.class);
-
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER,ChestLootConfig.COMMON_CONFIG,"chestloot-server.toml");
     }
 
@@ -122,29 +117,13 @@ public class Chestloot {
         public static void onRenderGui(RenderGuiEvent.Post event) {
             Minecraft mc = Minecraft.getInstance();
             if (mc.screen instanceof TitleScreen) {
-                PoseStack poseStack = event.getGuiGraphics().pose();
-
                 String text = "[CL] Fine, check desc";
-
-                int screenWidth = event.getWindow().getScreenWidth();
-                int screenHeight = event.getWindow().getScreenHeight();
-                int textWidth = mc.font.width(text);
-                float x = screenWidth - textWidth - 10;
-                float y = screenHeight - mc.font.lineHeight - 10;
-
-                int color = 0xFFFFFF;
-                Matrix4f matrix = poseStack.last().pose();
-                MultiBufferSource buffer = mc.renderBuffers().bufferSource();
-                Font.DisplayMode displayMode = Font.DisplayMode.NORMAL;
-                int packedLight = 15728880;
-                int packedOverlay = 0;
-
-                int renderedWidth = mc.font.drawInBatch(text,x,y,color,true,matrix,buffer,displayMode,packedLight,packedOverlay);
+                mc.gui.setTitle(Component.literal(text));
             }
         }
 
         private static int tickhavecompleted = 0;
-        private static int delay = 0;
+        public static int delay = 0;
         @SubscribeEvent
         public static void onTick(TickEvent.ServerTickEvent e) {
             tickhavecompleted++;
@@ -154,7 +133,6 @@ public class Chestloot {
                     for(BlockPos pos : posChests) {
                         Objects.requireNonNull(ServerLifecycleHooks.getCurrentServer().getLevel(Level.OVERWORLD)).setBlock(pos, chestcopy.get().defaultBlockState(),3);
                     }
-                    posChests.clear();
                 }
             }
         }
