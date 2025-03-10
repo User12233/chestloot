@@ -62,7 +62,6 @@ public class Chestloot {
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(EventsHandler.class);
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER,ChestLootConfig.COMMON_CONFIG,"chestloot-server.toml");
-        EventsHandler.delay = ChestLootConfig.delayOnRespawn.get();
     }
 
     public static void addPosChestToConfig(Entity player, BlockPos pos) {
@@ -93,7 +92,7 @@ public class Chestloot {
             LOGGER.warn("Chest positions are empty or delay on spawn is null");
         }
     }
-    @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
     public static class ClientSetup {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
@@ -101,7 +100,7 @@ public class Chestloot {
         }
     }
 
-    @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD,modid = MODID,value = Dist.DEDICATED_SERVER)
+    @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE,modid = MODID,value = Dist.DEDICATED_SERVER)
     public static class EventsHandler {
         private static ArrayList<BlockPos> posChests = new ArrayList<>() {};
 
