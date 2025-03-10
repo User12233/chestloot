@@ -50,7 +50,7 @@ public class ChestlootBlock extends Block {
 
             @Override
             public AbstractContainerMenu createMenu(int windowId, @NotNull Inventory playerInventory, @NotNull Player player) {
-                return new ChestlootContainer(windowId, playerInventory, player,pos);
+                return new ChestlootContainer(windowId, playerInventory, player);
             }
         }, pos);
     }

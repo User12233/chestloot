@@ -58,6 +58,7 @@ public class Chestloot {
         ITEMS.register(modEventBus);
         REGISTER.register(modEventBus);
         ChestlootContainer.register(modEventBus);
+        modEventBus.register(ClientSetup.class);
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(EventsHandler.class);
@@ -96,7 +97,7 @@ public class Chestloot {
     public static class ClientSetup {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            event.enqueueWork(() -> MenuScreens.register(ChestlootContainer.CHESTLOOT_CONTAINER.get(), ChestlootScreen::new));
+            MenuScreens.register(ChestlootContainer.CHESTLOOT_CONTAINER.get(), ChestlootScreen::new);
         }
     }
 
@@ -109,16 +110,6 @@ public class Chestloot {
             if(event.getPlacedBlock() == chestcopy.get().defaultBlockState()) {
                 posChests.add(event.getPos());
                 addPosChestToConfig(event.getEntity(),event.getPos());
-            }
-        }
-
-        @SubscribeEvent
-        @OnlyIn(Dist.CLIENT)
-        public static void onRenderGui(RenderGuiEvent.Post event) {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc.screen instanceof TitleScreen) {
-                String text = "[CL] Fine, check desc";
-                mc.gui.setTitle(Component.literal(text));
             }
         }
 

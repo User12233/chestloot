@@ -32,16 +32,14 @@ public class ChestlootContainer extends AbstractContainerMenu {
     public static final RegistryObject<MenuType<ChestlootContainer>> CHESTLOOT_CONTAINER =
             CONTAINERS.register("chestloot_container", () -> new MenuType<>(ChestlootContainer::new,FeatureFlagSet.of()));
 
-    private ContainerLevelAccess containerlevel;
     private final IItemHandler chestcontainer;
     //client
     public ChestlootContainer(int id, Inventory inv) {
-        this(id,inv,inv.player,BlockPos.ZERO);
+        this(id,inv,inv.player);
     }
     // Server
-    public ChestlootContainer(int id, Inventory inv, Player player, BlockPos pos) {
+    public ChestlootContainer(int id, Inventory inv, Player player) {
         super(CHESTLOOT_CONTAINER.get(), id);
-        this.containerlevel = ContainerLevelAccess.create(player.level(), pos);
         chestcontainer = new ItemStackHandler(27);
         int i = (3 - 4) * 18;
 
